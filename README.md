@@ -119,15 +119,84 @@ Representa un escenario dinámico: la **asignación de un árbitro a un partido*
 
 ---
 
+## ✅ Validación del Prototipo Vertical
+
+El **Prototype 1** del SGAD implementa un flujo **extremo a extremo (end-to-end)** que permite validar las decisiones arquitectónicas tomadas.  
+El flujo seleccionado corresponde al caso de uso central del sistema: **asignación de árbitro a partido**.
+
+### Flujo vertical implementado
+
+1. **Administrador**  
+   - Ingresa al sistema a través del **Frontend** y solicita la asignación de un árbitro a un partido específico.
+
+2. **Frontend → API Gateway**  
+   - El frontend envía la solicitud al **API Gateway**, que actúa como punto de entrada único.  
+   - El gateway valida la autenticación (JWT) mediante el **Auth Service** y enruta la petición hacia el microservicio correspondiente.
+
+3. **API Gateway → Match Service**  
+   - El **Match Management Service** recibe la solicitud, valida que el partido exista en la **base de datos relacional (PostgreSQL)** y verifica que pueda asignarse un árbitro.
+
+4. **Match Service → Referee Service**  
+   - Para asignar un árbitro, el servicio de partidos consulta al **Referee Management Service**, que mantiene la información de árbitros en una **base de datos NoSQL (MongoDB)**.  
+   - Se obtiene la lista de árbitros disponibles.
+
+5. **Selección y confirmación**  
+   - El **Match Service** selecciona un árbitro disponible y registra la designación en PostgreSQL.  
+   - La respuesta se devuelve al **Frontend** a través del **API Gateway**.
+
+6. **Administrador visualiza resultado**  
+   - El frontend muestra al administrador qué árbitro fue asignado exitosamente.
+
+---
+
+### 🔎 Aspectos validados con este flujo
+
+- **Estilo arquitectónico**: uso de microservicios distribuidos coordinados por un API Gateway.  
+- **Heterogeneidad tecnológica**: integración de Node.js (gateway/auth/frontend) y Python (match/referee).  
+- **Persistencia policroma**: PostgreSQL para datos relacionales (partidos) y MongoDB para datos no estructurados (disponibilidad de árbitros).  
+- **Despliegue contenerizado**: cada servicio corre en su contenedor Docker, orquestados con `docker-compose`.  
+- **Comunicación REST**: interacción entre servicios usando HTTP/JSON, incluyendo validación con JWT.  
+
+---
+
+
 ## ⚙️ Decisiones Arquitectónicas
 
-1. **Estilo**: microservicios distribuidos con API Gateway.  
-2. **Lenguajes**: Python (servicios de negocio), JavaScript/TypeScript (frontend, gateway, auth).  
-3. **Bases de datos**:  
-   - Relacional (partidos, árbitros, pagos).  
-   - NoSQL (disponibilidad, logs, historial).  
-4. **Contenedores**: cada microservicio se despliega en Docker.  
-5. **Conectores**: REST API entre microservicios y gateway.  
+
+### 1. Estilo arquitectónico
+Se eligió un estilo de **microservicios distribuidos** con un **API Gateway** al frente.  
+Esto permite:  
+- Independencia de despliegue y escalabilidad por servicio.  
+- Uso de distintos lenguajes y tecnologías según convenga.  
+- Aislamiento de fallos y mayor resiliencia.  
+
+### 2. Lenguajes y frameworks
+Se emplean **dos lenguajes de programación principales** (requisito de la entrega):  
+
+- **JavaScript/TypeScript**  
+  - **Frontend**: construido con **React + Vite** para ofrecer una interfaz rápida, modular y con soporte moderno de ESModules.  
+  - **API Gateway y Auth Service**: implementados con **Node.js + Express**, lo que facilita el enrutamiento, la integración de middleware y la validación de JWT.  
+
+- **Python**  
+  - **Match Management Service**: desarrollado con **FastAPI**, ideal por su soporte a documentación automática con Swagger, alto rendimiento (ASGI) y tipado con Pydantic.  
+  - **Referee Management Service**: también con **FastAPI**, aprovechando la misma pila para simplificar mantenimiento y consistencia en servicios de lógica de negocio.  
+
+### 3. Bases de datos
+- **PostgreSQL** → usado por `match-management` y `auth-service` para datos relacionales (partidos, usuarios, asignaciones).  
+- **MongoDB** → usado por `referee-management` para datos dinámicos como disponibilidad de árbitros.  
+- **Redis** (opcional en Prototype 1, pero previsto) → soporte para cacheo de tokens, sesiones y colas de notificaciones.  
+
+### 4. Conectores
+La comunicación se realiza vía **REST sobre HTTP/JSON**.  
+- El **API Gateway** es el único punto expuesto al frontend y aplica seguridad (JWT), rate limiting y logging.  
+- Los microservicios exponen endpoints REST internos (`/matches`, `/referees`, `/auth`).  
+
+### 5. Despliegue
+- **Docker** se usa para encapsular cada servicio y base de datos en contenedores independientes.  
+- **Docker Compose** coordina la infraestructura completa, facilitando el levantamiento del entorno en una sola instrucción.  
+- Esta decisión asegura que el sistema se pueda desplegar en cualquier entorno con mínima configuración.  
+
+---
 
 ---
 ## 🎨 Estilos arquitectónicos (SGAD)
