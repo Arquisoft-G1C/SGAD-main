@@ -107,6 +107,61 @@ Representa un escenario dinámico: la **asignación de un árbitro a un partido*
 5. **Conectores**: REST API entre microservicios y gateway.  
 
 ---
+## 🎨 Estilos arquitectónicos (SGAD)
+
+SGAD adopta un **estilo de microservicios** con **API Gateway** al frente. Cada capacidad de negocio (partidos, árbitros, autenticación) vive en su propio servicio, se despliega de forma independiente (Docker) y se comunica mediante **REST/HTTP** usando **JSON**.
+
+### ¿Por qué microservicios y no monolito?
+
+**Monolito (descartado para SGAD)**
+- Pros: simplicidad inicial, una sola base de código, despliegue único.
+- Contras: acoplamiento alto, una falla puede tumbar todo, escalar una parte obliga a escalar todo, barreras para usar múltiples lenguajes o motores de datos.
+
+**Microservicios (elegido)**
+- Se alinean con los **módulos de negocio** del dominio (partidos, árbitros, auth).
+- Permiten **tecnologías heterogéneas** (p. ej., Python para lógica de negocio; Node.js en gateway/frontend).
+- Habilitan **bases de datos policromas**: **PostgreSQL** para datos relacionales y **MongoDB** para disponibilidad/registros no estructurados.
+- Soportan **despliegue/escala independiente** por demanda (p. ej., escalar Referee o Match sin tocar los demás).
+- Encajan con la necesidad de **entregas incrementales** del curso (Prototype 1, 2, …).
+
+### Ventajas principales
+
+- **Escalabilidad independiente**: cada servicio escala según su carga.
+- **Aislamiento de fallas**: una caída en un servicio no detiene a los demás.
+- **Evolución tecnológica**: cambiar framework/BD en un servicio no afecta al resto.
+- **Ciclos de despliegue más cortos**: se actualiza solo el servicio modificado.
+- **Seguridad y gobierno centralizados** a través del **API Gateway** (autenticación, rate-limiting, logging).
+
+### Trade-offs / Costes
+
+- **Complejidad operacional**: más servicios → más orquestación/observabilidad.
+- **Latencia de red**: llamadas entre servicios agregan hops.
+- **Consistencia de datos**: se prefiere **consistencia eventual** entre servicios/BDs.
+- **Pruebas de integración**: requieren entornos con varios contenedores (Compose).
+- **Gestión de configuración**: variables de entorno por servicio (URLs, credenciales).
+
+> Cómo mitigamos: Docker Compose para orquestación local, **API Gateway** para cross-cutting concerns, endpoints de health (`/health`) y convenciones de contratos REST.
+
+### Comunicación (REST sobre HTTP)
+
+- **Patrón**: **Frontend ⇆ API Gateway ⇆ Microservicios**.  
+  El gateway enruta, autentica (JWT), aplica rate-limit y uniformiza respuestas/errores.
+- **Formato**: `application/json` en request/response.
+- **Verbos y rutas (ejemplos)**  
+  - **Match Service**:  
+    - `GET /matches`, `GET /matches/{id}`, `POST /matches`, `PUT /matches/{id}`, `DELETE /matches/{id}`
+  - **Referee Service**:  
+    - `GET /referees`, `GET /referees/{id}`, `POST /referees`, `PUT /referees/{id}`, `GET /referees/available`
+  - **Auth Service**:  
+    - `POST /auth/login`, `GET /auth/verify`, `GET /auth/profile`
+- **Autenticación**: JWT en `Authorization: Bearer <token>`; el **gateway** valida y reenvía claims a los servicios.
+- **Estados HTTP**: `200/201` ok, `400` solicitud inválida, `401/403` autenticación/autorización, `404` no encontrado, `409` conflicto, `500` error interno.
+- **Salud/monitoring**:  
+  - Gateway: `GET /health`, `GET /health/services`  
+  - Servicios: `GET /health` (indica disponibilidad y conexión a su BD)
+- **Descubrimiento/ruteo**: en local, nombres de servicio/puertos definidos en `docker-compose.yml` (p. ej., `match-service:8000`, `referee-service:8000`, `auth-service:3001`).
+
+> Nota: Para notificaciones/colas futuras se considera **Redis** (cache/mensajería), manteniendo REST como canal principal para Prototype 1.
 
 ## 📂 Estructura del Repositorio
 
