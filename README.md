@@ -94,26 +94,6 @@ Representa un escenario dinámico: la **asignación de un árbitro a un partido*
 4. El **Referee Service** consulta la disponibilidad en la BD.  
 5. Se selecciona un árbitro disponible y se confirma al administrador.
 
-### 🔹 Vista General de la Arquitectura
-![Vista General](docs/Vista%20General%20de%20la%20Arquitectura%20SGAD.JPG)  
-Muestra el sistema completo con actores externos, frontend, API Gateway, microservicios y bases de datos.
-
-### 🔹 Vista de Contexto
-![Vista de Contexto](docs/Contexto%20del%20Sistema%20(vista%20de%20alto%20nivel)  
-SGAD como caja negra interactuando con Árbitro, Administrador y Club/Equipo.
-
-### 🔹 Vista C&C (Componentes y Conectores)
-![Vista C&C](docs/Vista%20C%26C%20(microservicios).JPG)  
-Ilustra los microservicios (`frontend`, `gateway`, `match`, `referee`, `auth`, `infraestructura`) y cómo se conectan entre sí.
-
-### 🔹 Vista de Despliegue
-![Vista de Despliegue](docs/Vista%20de%20Despliegue%20(Deployment).JPG)  
-Cada microservicio y base de datos corre en un contenedor Docker independiente, coordinados por `docker-compose`.
-
-### 🔹 Caso de Uso – Asignación de Árbitro
-![Caso de Uso](docs/Caso%20de%20uso%20(Asignación%20de%20árbitro).JPG)  
-Explica el flujo dinámico de cómo un administrador solicita y el sistema asigna un árbitro disponible a un partido.
-
 ---
 
 ## ⚙️ Decisiones Arquitectónicas
