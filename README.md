@@ -44,6 +44,9 @@ Construir un **prototipo vertical** basado en un diseño arquitectónico inicial
 ## 🏗️ Estructuras Arquitectónicas
 
 ### 🔹 Vista General de la Arquitectura
+
+La vista general muestra el sistema completo en una capa macro. Los **actores externos** (Árbitro, Club/Equipo, Administrador) interactúan con el sistema a través del **Frontend**. Este se comunica con un **API Gateway** que centraliza el acceso y enruta las peticiones hacia los microservicios internos. Los microservicios (`match-management`, `referee-management`, `auth-service`) a su vez dependen de la infraestructura de datos, conformada por una **base relacional (PostgreSQL)** y una **base NoSQL (MongoDB/Redis)**. Esta vista resume las dependencias y puntos de integración del sistema.
+
 ![Vista General](docs/Vista%20General%20de%20la%20Arquitectura%20SGAD.JPG)  
 Esta vista muestra todo el ecosistema del sistema **SGAD** en un solo diagrama:  
 - **Actores externos**: Árbitro, Club/Equipo y Administrador.  
@@ -55,6 +58,10 @@ Esta vista muestra todo el ecosistema del sistema **SGAD** en un solo diagrama:
 ---
 
 ### 🔹 Vista de Contexto
+
+La vista de contexto representa al sistema **SGAD como una caja negra** en interacción con su entorno. El **Árbitro** consulta sus designaciones, el **Club/Equipo** solicita árbitros, y el **Administrador** gestiona partidos y recibe reportes. Cada actor utiliza la interfaz del sistema (frontend), sin necesidad de conocer los detalles de implementación. Esta vista evidencia el alcance del sistema y sus límites con respecto a usuarios externos.
+
+
 ![Vista de Contexto](docs/Contexto%20del%20Sistema%20(vista%20de%20alto%20nivel).JPG)  
 El sistema se ve como una **caja negra** y se representan las interacciones externas:  
 - El **Árbitro** consulta designaciones.  
@@ -64,7 +71,16 @@ El sistema se ve como una **caja negra** y se representan las interacciones exte
 ---
 
 ### 🔹 Vista C&C (Componentes y Conectores)
+La vista de Componentes y Conectores detalla los **microservicios** que componen SGAD y cómo se relacionan. El **Frontend** se conecta únicamente al **API Gateway**, que actúa como intermediario entre cliente y servicios internos. El gateway enruta solicitudes hacia:  
+- `match-management` para la gestión de partidos,  
+- `referee-management` para la gestión de árbitros,  
+- `auth-service` para la autenticación.  
+
+Todos estos servicios dependen del componente de **infraestructura**, que provee acceso a bases de datos relacional y NoSQL. Los conectores usados son principalmente **HTTP REST**. Esta vista evidencia la modularidad y separación de responsabilidades.
+
+
 ![Vista C&C](docs/Vista%20C&C%20(microservicios).JPG)  
+
 Expone la estructura interna de SGAD como un sistema de **microservicios**:  
 - `sgad-frontend` → interfaz de usuario.  
 - `sgad-api-gateway` → enrutador de peticiones.  
@@ -76,6 +92,9 @@ Expone la estructura interna de SGAD como un sistema de **microservicios**:
 ---
 
 ### 🔹 Vista de Despliegue
+La vista de despliegue muestra cómo los **contenedores Docker** alojan cada servicio. El **Frontend**, el **API Gateway**, `match-management`, `referee-management`, y `auth-service` se ejecutan como contenedores independientes. Además, las bases de datos (**PostgreSQL** y **MongoDB**) corren en contenedores separados, facilitando la orquestación mediante `docker-compose`. Las relaciones entre nodos se establecen como enlaces de red internos de Docker, lo cual asegura la comunicación entre servicios sin exponer puertos innecesarios al exterior.
+
+
 ![Vista de Despliegue](docs/Vista%20de%20Despliegue%20(Deployment).JPG)  
 Describe cómo se despliegan los componentes en contenedores Docker:  
 - Cada microservicio corre en su propio contenedor.  
@@ -86,6 +105,10 @@ Describe cómo se despliegan los componentes en contenedores Docker:
 ---
 
 ### 🔹 Caso de Uso – Asignación de Árbitro
+
+El caso de uso describe el flujo dinámico de asignación de árbitros. El **Administrador** solicita la designación de un árbitro desde el **Frontend**, que envía la petición al **API Gateway**. Este valida el partido con el **Match Service** y solicita al **Referee Service** la disponibilidad de árbitros. El **Referee Service** consulta su base de datos NoSQL y responde con árbitros disponibles. El Match Service selecciona uno y devuelve la confirmación, que viaja de regreso al administrador. Esta vista ilustra las **interacciones paso a paso** y cómo los microservicios colaboran para resolver un requerimiento funcional clave.
+
+
 ![Caso de Uso](docs/Caso%20de%20uso%20(Asignación%20de%20árbitro).JPG)  
 Representa un escenario dinámico: la **asignación de un árbitro a un partido**.  
 1. El **Administrador** solicita la designación.  
