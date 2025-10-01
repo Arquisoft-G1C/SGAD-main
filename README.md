@@ -43,6 +43,25 @@ Construir un **prototipo vertical** basado en un diseño arquitectónico inicial
 
 ## 🏗️ Estructuras Arquitectónicas
 
+### 🔹 Vista en Capas
+
+![Vista en Capas](docs/vista_capas.jpg)  
+
+Esta vista muestra la arquitectura del SGAD organizada en **capas lógicas**:
+
+- **Capa de Presentación**: el **Frontend Web** desarrollado con **React + TypeScript**, que expone la interfaz al usuario final.  
+- **Capa de API Gateway**: un **gateway en Node.js + Express**, que centraliza todas las solicitudes, aplica autenticación y enruta a los servicios correspondientes.  
+- **Capa Lógica / Backend**: compuesta por microservicios especializados:  
+  - **Auth Service (Node.js)**: maneja login, generación y validación de tokens JWT.  
+  - **Match Management (Python + FastAPI)**: gestiona partidos, asignaciones y persistencia relacional.  
+  - **Referee Management (Python + FastAPI + GraphQL)**: administra árbitros y su disponibilidad en una base NoSQL.  
+- **Capa de Datos**:  
+  - **PostgreSQL** para datos estructurados (usuarios, partidos, asignaciones).  
+  - **MongoDB** para datos no estructurados (disponibilidad, logs, certificados).  
+
+Las relaciones entre capas se implementan mediante **conectores REST/HTTP y GraphQL**, garantizando separación de responsabilidades y escalabilidad.
+
+
 ### 🔹 Vista General de la Arquitectura
 
 La vista general muestra el sistema completo en una capa macro. Los **actores externos** (Árbitro, Club/Equipo, Administrador) interactúan con el sistema a través del **Frontend**. Este se comunica con un **API Gateway** que centraliza el acceso y enruta las peticiones hacia los microservicios internos. Los microservicios (`match-management`, `referee-management`, `auth-service`) a su vez dependen de la infraestructura de datos, conformada por una **base relacional (PostgreSQL)** y una **base NoSQL (MongoDB/Redis)**. Esta vista resume las dependencias y puntos de integración del sistema.
