@@ -45,7 +45,7 @@ Construir un **prototipo vertical** basado en un diseño arquitectónico inicial
 
 ### 🔹 Vista en Capas
 
-![Vista en Capas](docs/vista_capas.jpg)  
+![Vista en Capas](docs/vista_capas.jpeg)  
 
 Esta vista muestra la arquitectura del SGAD organizada en **capas lógicas**:
 
