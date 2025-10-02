@@ -1,6 +1,7 @@
 # SGAD – Sistema de Gestión de Árbitros y Designaciones
-
-![SGAD Logo](docs/logo.png)
+<div align="center">
+  <img src="docs/logo_text.png" alt="SGAD Logo" width="400">
+</div>
 
 ---
 
