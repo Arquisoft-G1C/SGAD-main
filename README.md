@@ -10,7 +10,7 @@
 Grupo **Arquisoft G1C**  
 - Wullfredo Javier Barco Godoy – wbarco@unal.edu.co  
 - Jacel Thomás Enciso Pinzón – jencisop@unal.edu.co  
-- Nombre 3 – correo@unal.edu.co  
+- Santiago Nova Acosta – snova@unal.edu.co 
 - Nombre 4 – correo@unal.edu.co  
 
 ---
@@ -46,8 +46,8 @@ Construir un **prototipo vertical** basado en un diseño arquitectónico inicial
 - 1 componente de presentación (frontend web).  
 - 2 o más componentes de lógica (gestión de árbitros y partidos).  
 - 2 componentes de datos (SQL y NoSQL).  
-- 2 tipos de conectores HTTP (REST y API Gateway).  
-- 2 lenguajes de programación (Python, JavaScript/TypeScript).  
+- 2 tipos de conectores HTTP (REST y GraphQL).  
+- 2 lenguajes de programación (Python, JavaScript y TypeScript).  
 - Despliegue contenerizado (Docker).  
 
 ---
@@ -61,11 +61,11 @@ Construir un **prototipo vertical** basado en un diseño arquitectónico inicial
 Esta vista muestra la arquitectura del SGAD organizada en **capas lógicas**:
 
 - **Capa de Presentación**: el **Frontend Web** desarrollado con **React + TypeScript**, que expone la interfaz al usuario final.  
-- **Capa de API Gateway**: un **gateway en Node.js + Express**, que centraliza todas las solicitudes, aplica autenticación y enruta a los servicios correspondientes.  
+- **Capa de API Gateway**: un **gateway en Node.js + Express**, que centraliza todas las solicitudes y enruta a los servicios correspondientes.  
 - **Capa Lógica / Backend**: compuesta por microservicios especializados:  
   - **Auth Service (Node.js)**: maneja login, generación y validación de tokens JWT.  
   - **Match Management (Python + FastAPI)**: gestiona partidos, asignaciones y persistencia relacional.  
-  - **Referee Management (Python + FastAPI + GraphQL)**: administra árbitros y su disponibilidad en una base NoSQL.  
+  - **Referee Management (Python + FastAPI + GraphQL)**: administra árbitros y su disponibilidad.  
 - **Capa de Datos**:  
   - **PostgreSQL** para datos estructurados (usuarios, partidos, asignaciones).  
   - **MongoDB** para datos no estructurados (disponibilidad, logs, certificados).  
@@ -167,7 +167,7 @@ El flujo seleccionado corresponde al caso de uso central del sistema: **asignaci
    - El **Match Management Service** recibe la solicitud, valida que el partido exista en la **base de datos relacional (PostgreSQL)** y verifica que pueda asignarse un árbitro.
 
 4. **Match Service → Referee Service**  
-   - Para asignar un árbitro, el servicio de partidos consulta al **Referee Management Service**, que mantiene la información de árbitros en una **base de datos NoSQL (MongoDB)**.  
+   - Para asignar un árbitro, el servicio de partidos consulta al **Referee Management Service**, que mantiene la información de árbitros en una **base de datos relacional (PostgreSQL)**.  
    - Se obtiene la lista de árbitros disponibles.
 
 5. **Selección y confirmación**  
@@ -183,7 +183,7 @@ El flujo seleccionado corresponde al caso de uso central del sistema: **asignaci
 
 - **Estilo arquitectónico**: uso de microservicios distribuidos coordinados por un API Gateway.  
 - **Heterogeneidad tecnológica**: integración de Node.js (gateway/auth/frontend) y Python (match/referee).  
-- **Persistencia policroma**: PostgreSQL para datos relacionales (partidos) y MongoDB para datos no estructurados (disponibilidad de árbitros).  
+- **Persistencia policroma**: PostgreSQL para datos relacionales (partidos) y MongoDB para datos no estructurados (certificación de árbitro).  
 - **Despliegue contenerizado**: cada servicio corre en su contenedor Docker, orquestados con `docker-compose`.  
 - **Comunicación REST**: interacción entre servicios usando HTTP/JSON, incluyendo validación con JWT.  
 
@@ -204,7 +204,7 @@ Esto permite:
 Se emplean **dos lenguajes de programación principales** (requisito de la entrega):  
 
 - **JavaScript/TypeScript**  
-  - **Frontend**: construido con **React + Vite** para ofrecer una interfaz rápida, modular y con soporte moderno de ESModules.  
+  - **Frontend**: construido con **React** para ofrecer una interfaz rápida, modular y con soporte moderno de ESModules.  
   - **API Gateway y Auth Service**: implementados con **Node.js + Express**, lo que facilita el enrutamiento, la integración de middleware y la validación de JWT.  
 
 - **Python**  
@@ -213,7 +213,7 @@ Se emplean **dos lenguajes de programación principales** (requisito de la entre
 
 ### 3. Bases de datos
 - **PostgreSQL** → usado por `match-management` y `auth-service` para datos relacionales (partidos, usuarios, asignaciones).  
-- **MongoDB** → usado por `referee-management` para datos dinámicos como disponibilidad de árbitros.  
+- **MongoDB** → usado por `referee-management` para datos dinámicos como certificación de árbitros.  
 - **Redis** (opcional en Prototype 1, pero previsto) → soporte para cacheo de tokens, sesiones y colas de notificaciones.  
 
 ### 4. Conectores
