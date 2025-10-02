@@ -4,6 +4,16 @@
 
 ---
 
+## 👥 Equipo
+
+Grupo **Arquisoft G1C**  
+- Wullfredo Javier Barco Godoy – wbarco@unal.edu.co  
+- Jacel Thomás Enciso Pinzón – jencisop@unal.edu.co  
+- Nombre 3 – correo@unal.edu.co  
+- Nombre 4 – correo@unal.edu.co  
+
+---
+
 ## 📖 Descripción
 
 El **SGAD (Sistema de Gestión de Árbitros y Designaciones)** es una plataforma web distribuida que facilita la **asignación imparcial de árbitros a partidos deportivos**, la **gestión administrativa** de árbitros y partidos, y el **control de disponibilidad y pagos**.  
@@ -328,16 +338,6 @@ docker-compose up --build
 - [sgad-referee-management](../sgad-referee-management)  
 - [sgad-auth-service](../sgad-auth-service)  
 - [sgad-infrastructure](../sgad-infrastructure)  
-
----
-
-## 👥 Equipo
-
-Grupo **Arquisoft G1C**  
-- Wullfredo Javier Barco Godoy – wbarco@unal.edu.co  
-- Nombre 2 – correo@unal.edu.co  
-- Nombre 3 – correo@unal.edu.co  
-- Nombre 4 – correo@unal.edu.co  
 
 ---
 
