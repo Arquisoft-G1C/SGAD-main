@@ -54,24 +54,83 @@ Construir un **prototipo vertical** basado en un diseño arquitectónico inicial
 
 ## 🏗️ Estructuras Arquitectónicas
 
-### 🔹 Vista en Capas
+### 🔹 Diagrama de Componentes y Conectores
 
-![Vista en Capas](docs/vista_capas.jpeg)  
+![Diagrama C&C](docs/c&c_diagram.png)  
 
-Esta vista muestra la arquitectura del SGAD organizada en **capas lógicas**:
+Este diagrama muestra la arquitectura del SGAD organizada en componentes y conectores:
 
-- **Capa de Presentación**: el **Frontend Web** desarrollado con **React + TypeScript**, que expone la interfaz al usuario final.  
-- **Capa de API Gateway**: un **gateway en Node.js + Express**, que centraliza todas las solicitudes y enruta a los servicios correspondientes.  
-- **Capa Lógica / Backend**: compuesta por microservicios especializados:  
-  - **Auth Service (Node.js)**: maneja login, generación y validación de tokens JWT.  
-  - **Match Management (Python + FastAPI)**: gestiona partidos, asignaciones y persistencia relacional.  
-  - **Referee Management (Python + FastAPI + GraphQL)**: administra árbitros y su disponibilidad.  
-- **Capa de Datos**:  
-  - **PostgreSQL** para datos estructurados (usuarios, partidos, asignaciones).  
-  - **MongoDB** para datos no estructurados (disponibilidad, logs, certificados).  
+**1. Web Frontend: React + TypeScript**
+- **Tipo:** Capa de presentación  
+- **Responsabilidad:** Interfaz web del sistema SGAD, desde donde los usuarios acceden a las funcionalidades de gestión de árbitros, partidos y autenticación.  
+- **Tecnologías:** React (para UI dinámica) y TypeScript (para tipado y mantenimiento).  
+- **Conexiones:**  
+  - Envía solicitudes **REST** al *Auth Service* y *Match Management*.  
+  - Envía solicitudes **GraphQL** al *Referee Management*.  
 
-Las relaciones entre capas se implementan mediante **conectores REST/HTTP y GraphQL**, garantizando separación de responsabilidades y escalabilidad.
+**2. Auth Service: Node.js + JWT**
+- **Tipo:** Servicio backend  
+- **Responsabilidad:** Gestionar autenticación y autorización de usuarios.  
+- **Tecnologías:** Node.js con Express y JWT (JSON Web Token).  
+- **Funciones principales:**
+  - Validación de credenciales.  
+  - Generación y verificación de tokens JWT.  
+  - Almacenamiento de usuarios en PostgreSQL.  
+- **Conexiones:**
+  - Recibe peticiones **REST** desde el frontend.  
+  - Se comunica mediante **SQL** con SGAD_DB.
 
+**3. Match Management: Python + FastAPI**
+- **Tipo:** Servicio backend  
+- **Responsabilidad:** Gestionar información de partidos (creación, programación, resultados, etc.).  
+- **Tecnologías:** Python + FastAPI.  
+- **Funciones principales:**
+  - API REST para gestión CRUD de partidos.  
+  - Integración con PostgreSQL para persistencia de datos.  
+- **Conexiones:**
+  - Recibe solicitudes **REST** del frontend.  
+  - Se comunica con SGAD_DB usando **SQL**.  
+
+**4. Referee Management: Python + FastAPI + GraphQL**
+- **Tipo:** Servicio backend especializado  
+- **Responsabilidad:** Administración de árbitros, historial, evaluaciones y certificados.  
+- **Tecnologías:** Python, FastAPI.  
+- **Funciones principales:**
+  - Guardar datos estructurados de árbitros en PostgreSQL.  
+  - Almacenar certificados y documentos en MongoDB.  
+- **Conexiones:**
+  - Recibe solicitudes **GraphQL** del frontend.  
+  - Se comunica con SGAD_DB (SQL) y Certificados_DB (NoSQL).
+  
+**5. SGAD_DB**
+- **Tipo:** Base de datos relacional  
+- **Responsabilidad:** Almacenar la información estructurada del sistema (usuarios, árbitros, partidos).  
+- **Tecnologías:** PostgreSQL 14+.  
+- **Conexiones:**  
+  - Auth Service (usuarios)  
+  - Match Management (partidos)  
+  - Referee Management (árbitros)
+ 
+**6. Certificados_DB**
+- **Tipo:** Base de datos NoSQL  
+- **Responsabilidad:** Almacenamiento de certificados y documentos asociados a los árbitros.  
+- **Tecnologías:** MongoDB 6+.  
+- **Conexiones:**  
+  - Exclusivamente con el servicio *Referee Management*.  
+
+**Conectores**
+
+| **Conector** | **Tipo / Protocolo** | **Dirección** | **Descripción funcional** |
+|---------------|----------------------|----------------|----------------------------|
+| Frontend → Auth Service | REST (HTTP) | Bidireccional (solicitud/respuesta) | Manejo de login, logout y validación de usuarios. |
+| Frontend → Match Management | REST (HTTP) | Bidireccional | Envío y consulta de información sobre partidos. |
+| Frontend → Referee Management | GraphQL (HTTP) | Bidireccional | Consultas estructuradas y flexibles sobre árbitros y sus datos. |
+| Auth Service → SGAD_DB | SQL | Unidireccional | Operaciones de lectura/escritura sobre usuarios y credenciales. |
+| Match Management → SGAD_DB | SQL | Bidireccional | Persistencia de partidos y resultados. |
+| Referee Management → SGAD_DB | SQL | Bidireccional | Persistencia de datos básicos de árbitros. |
+| Referee Management → Certificados_DB | NoSQL | Bidireccional | Almacenamiento de certificados y documentos. |
+
+---
 
 ### 🔹 Vista General de la Arquitectura
 
