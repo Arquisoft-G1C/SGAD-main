@@ -159,27 +159,6 @@ El sistema se ve como una **caja negra** y se representan las interacciones exte
 
 ---
 
-### 🔹 Vista C&C (Componentes y Conectores)
-La vista de Componentes y Conectores detalla los **microservicios** que componen SGAD y cómo se relacionan. El **Frontend** se conecta únicamente al **API Gateway**, que actúa como intermediario entre cliente y servicios internos. El gateway enruta solicitudes hacia:  
-- `match-management` para la gestión de partidos,  
-- `referee-management` para la gestión de árbitros,  
-- `auth-service` para la autenticación.  
-
-Todos estos servicios dependen del componente de **infraestructura**, que provee acceso a bases de datos relacional y NoSQL. Los conectores usados son principalmente **HTTP REST**. Esta vista evidencia la modularidad y separación de responsabilidades.
-
-
-![Vista C&C](docs/Vista%20C&C%20(microservicios).JPG)  
-
-Expone la estructura interna de SGAD como un sistema de **microservicios**:  
-- `sgad-frontend` → interfaz de usuario.  
-- `sgad-api-gateway` → enrutador de peticiones.  
-- `sgad-match-management` → gestión de partidos.  
-- `sgad-referee-management` → gestión de árbitros.  
-- `sgad-auth-service` → autenticación básica.  
-- `sgad-infrastructure` → soporte de bases de datos.  
-
----
-
 ### 🔹 Vista de Despliegue
 La vista de despliegue muestra cómo los **contenedores Docker** alojan cada servicio. El **Frontend**, el **API Gateway**, `match-management`, `referee-management`, y `auth-service` se ejecutan como contenedores independientes. Además, las bases de datos (**PostgreSQL** y **MongoDB**) corren en contenedores separados, facilitando la orquestación mediante `docker-compose`. Las relaciones entre nodos se establecen como enlaces de red internos de Docker, lo cual asegura la comunicación entre servicios sin exponer puertos innecesarios al exterior.
 
@@ -190,6 +169,30 @@ Describe cómo se despliegan los componentes en contenedores Docker:
 - El **API Gateway** intermedia entre frontend y servicios.  
 - **PostgreSQL** almacena información de partidos y autenticación.  
 - **MongoDB** almacena la disponibilidad de árbitros y datos no estructurados.  
+
+---
+
+### 🔹 Vista de Capas
+Su objetivo es mostrar cómo se divide la aplicación en niveles funcionales y qué capa puede comunicarse con cuál, promoviendo la separación de responsabilidades y la mantenibilidad.
+
+![Vista de Capas](docs/SGAD-layer-view.png)  
+
+**Estructura**
+
+- **Capa de Presentación**:
+Interactúa con el usuario final. Gestiona la interfaz y la comunicación con la capa lógica.
+  - SGAD-Frontend: React + TypeScript.
+
+- **Capa Lógica o de Negocio**:
+Contiene la lógica central del sistema, las reglas de negocio y la coordinación entre módulos.
+  - Auth Service: (Node.js)
+  - Match Management: (FastAPI)
+  - Referee Management: (FastAPI)
+
+- **Capa de Datos**:
+Administra la persistencia y el acceso a la información.
+  - SGAD-DB: PostgreSQL
+  - Certificados-DB: MongoDB
 
 ---
 
