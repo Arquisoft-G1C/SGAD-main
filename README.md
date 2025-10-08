@@ -387,9 +387,12 @@ docker-compose up --build
 ```
 
 ### 4. Acceder al sistema
-- Frontend: [http://localhost:3000](http://localhost:3000)  
-- API Gateway: [http://localhost:8080](http://localhost:8080)  
-- Documentación de APIs (Swagger): [http://localhost:8000/docs](http://localhost:8000/docs) *(ejemplo para servicios en FastAPI)*  
+- **Frontend**: [http://localhost:3000](http://localhost:3000)  
+- **Auth Service**: [http://localhost:8000](http://localhost:8000)
+- **Match Service**: [http://localhost:8000](http://localhost:8001)
+- **Referee Service**: [http://localhost:8000](http://localhost:8002)
+- **Postgres**: "5432:5432"
+- **Mongo**: "27017:27017"
 
 ---
 
@@ -401,10 +404,3 @@ docker-compose up --build
 - [sgad-referee-management](../sgad-referee-management)  
 - [sgad-auth-service](../sgad-auth-service)  
 - [sgad-infrastructure](../sgad-infrastructure)  
-
----
-
-## 📅 Entregable
-
-- **Entrega**: 1 de octubre de 2025 (23h59).  
-- **Presentación**: 2 de octubre de 2025 (en clase).  
