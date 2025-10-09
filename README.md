@@ -196,6 +196,27 @@ Administra la persistencia y el acceso a la información.
 
 ---
 
+### 🔹 Vista de Descomposición
+La vista de descomposición muestra cómo el sistema SGAD se divide en módulos y submódulos funcionales, representando la estructura jerárquica del sistema.
+
+![Vista de Descomposición](docs/sgad-descomposition-view.PNG)  
+
+**Estructura**
+
+- **Frontend**:  Provee la interfaz de usuario
+  - **Web Page**: Provee la interfaz de usuario para la gestión de árbitros, partidos y autenticación.
+
+- **Backend**:  Implementar la lógica de negocio del sistema.
+  - **Auth Service**: Gestiona registro, login y control de acceso.
+  - **Match Management**: Gestiona los partidos y asignaciones.
+  - **Referee Management**: Administra árbitros y certificados.
+
+- **Capa de Datos**:  Garantizar la persistencia y consistencia de los datos.
+  - **SGAD-DB**: Almacena información relacional (usuarios, partidos, árbitros).
+  - **Certificados-DB**: Almacena documentos y certificaciones de árbitros.
+
+---
+
 ### 🔹 Caso de Uso – Asignación de Árbitro
 
 El caso de uso describe el flujo dinámico de asignación de árbitros. El **Administrador** solicita la designación de un árbitro desde el **Frontend**, que envía la petición al **API Gateway**. Este valida el partido con el **Match Service** y solicita al **Referee Service** la disponibilidad de árbitros. El **Referee Service** consulta su base de datos NoSQL y responde con árbitros disponibles. El Match Service selecciona uno y devuelve la confirmación, que viaja de regreso al administrador. Esta vista ilustra las **interacciones paso a paso** y cómo los microservicios colaboran para resolver un requerimiento funcional clave.
