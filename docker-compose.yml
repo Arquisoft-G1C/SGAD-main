@@ -1,0 +1,93 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: ../sgad-frontend
+    container_name: sgad-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+
+  api-gateway:
+    build: ../sgad-api-gateway
+    container_name: sgad-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - match-service
+      - referee-service
+      - auth-service
+      - availability-service
+
+  match-service:
+    build: ../sgad-match-management
+    container_name: sgad-match-service
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@relational-db:5432/sgad_matches
+    depends_on:
+      - relational-db
+
+  referee-service:
+    build: ../sgad-referee-management
+    container_name: sgad-referee-service
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_URL=mongodb://nosql-db:27017/sgad_referees
+    depends_on:
+      - nosql-db
+
+  auth-service:
+    build: ../sgad-auth-service
+    container_name: sgad-auth-service
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@relational-db:5432/sgad_auth
+    depends_on:
+      - relational-db
+
+  availability-service:
+    build: ../sgad-availability-service
+    container_name: sgad-availability-service
+    ports:
+      - "8004:8000"
+    environment:
+      - DATABASE_URL=mongodb://nosql-db:27017/sgad_availability
+    depends_on:
+      - nosql-db
+
+  infrastructure:
+    build: ../sgad-infrastructure
+    container_name: sgad-infrastructure
+    depends_on:
+      - relational-db
+      - nosql-db
+
+  relational-db:
+    image: postgres:14
+    container_name: sgad-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sgad
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  nosql-db:
+    image: mongo:6
+    container_name: sgad-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  postgres_data:
+  mongo_data:
+
