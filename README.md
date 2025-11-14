@@ -163,7 +163,7 @@ El sistema se ve como una **caja negra** y se representan las interacciones exte
 La vista de despliegue muestra cómo los **contenedores Docker** alojan cada servicio. El **Frontend**, el **API Gateway**, `match-management`, `referee-management`, y `auth-service` se ejecutan como contenedores independientes. Además, las bases de datos (**PostgreSQL** y **MongoDB**) corren en contenedores separados, facilitando la orquestación mediante `docker-compose`. Las relaciones entre nodos se establecen como enlaces de red internos de Docker, lo cual asegura la comunicación entre servicios sin exponer puertos innecesarios al exterior.
 
 
-![Vista de Despliegue](docs/Vista%20de%20Despliegue%20(Deployment).JPG)  
+![Vista de Despliegue](docs/Vista%20de%20Despliegue%20(Deployment).png)  
 Describe cómo se despliegan los componentes en contenedores Docker:  
 - Cada microservicio corre en su propio contenedor.  
 - El **API Gateway** intermedia entre frontend y servicios.  
