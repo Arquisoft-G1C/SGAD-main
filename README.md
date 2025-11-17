@@ -10,8 +10,7 @@
 Grupo **Arquisoft G1C**  
 - Wullfredo Javier Barco Godoy – wbarco@unal.edu.co  
 - Jacel Thomás Enciso Pinzón – jencisop@unal.edu.co  
-- Santiago Nova Acosta – snova@unal.edu.co 
-- Nombre 4 – correo@unal.edu.co  
+- Santiago Nova Acosta – snova@unal.edu.co
 
 ---
 
