@@ -56,7 +56,7 @@ Construir un **prototipo vertical** basado en un diseño arquitectónico inicial
 
 ### 🔹 Diagrama de Componentes y Conectores
 
-![Diagrama C&C](docs/c&c_diagram.png)  
+![Diagrama C&C](docs/Vista_c&c.png)  
 
 Este diagrama muestra la arquitectura del SGAD organizada en componentes y conectores:
 
