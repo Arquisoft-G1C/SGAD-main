@@ -209,7 +209,8 @@ Esto demuestra una buena tolerancia a fallas localizada:
 solo el punto de entrada se ve afectado, pero al restaurarlo, el flujo vuelve a la normalidad.
 
 
-🧾 ESCENARIO 2 COMPLETO (listo para entregar)
+🧾 ESCENARIO 2 COMPLETO 
+
 Escenario 2 — Caída de una instancia del API Gateway
 
 Atributo evaluado: Confiabilidad → Disponibilidad por replicación
@@ -574,10 +575,11 @@ docker start sgad-referee-db
 
 Como en tu caso esta BD no está creada en tu infraestructura actual, la restauración no aplica.
 
-🟩 CONCLUSIÓN DEL ESCENARIO 4 (LISTA PARA INFORME)
+🟩 CONCLUSIÓN DEL ESCENARIO 4
 
 En el Escenario 4 se analizó el comportamiento del SGAD ante la caída de la base de datos del servicio de árbitros (sgad-referee-db). Al verificar docker ps, se evidenció que la base de datos no se encontraba en ejecución. Aun así, el endpoint HEAD /api/referees continuó respondiendo con redirecciones 307, indicando que el sgad-referee-service mantiene una disponibilidad mínima aun sin acceso a la base de datos.
 
 Los logs del servicio mostraron únicamente respuestas exitosas, sin errores de conexión, lo cual indica que la operación HEAD no depende de la base de datos. El resto de los servicios (API Gateway, Reverse Proxy, Auth, Availability, Match, RabbitMQ, Redis y MongoDB) permanecieron completamente operativos.
+
 
 Este resultado demuestra aislamiento de fallas, degradación controlada y confiabilidad de la arquitectura, ya que la caída de un componente de datos no afecta la disponibilidad global del sistema.
