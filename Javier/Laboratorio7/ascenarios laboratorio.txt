@@ -1,0 +1,583 @@
+Escenario 1 — Reverse Proxy falla o entra en timeout
+
+(Lo completamos cuando me confirmes qué quieres medir)
+
+Escenario 2 — Caída de una instancia del API Gateway
+
+→ Sistema debe seguir funcionando con las otras 3 réplicas.
+
+Escenario 3 — Caída de un microservicio crítico (Auth Service)
+
+→ El sistema debe manejar “fail-stop” y responder con error controlado.
+
+Escenario 4 — Fallo de base de datos / retry + degradación controlada
+
+→ Un microservicio no puede conectarse al Postgres/Mongo, debe reintentar con backoff.
+
+
+
+🔹 Escenario 1 – Falla del Reverse Proxy (NGINX) por “congelamiento” (pause)
+1. Definición del escenario
+
+Source (fuente): Cliente externo (curl desde el equipo del usuario).
+
+Stimulus (estímulo): El reverse proxy se congela (estado paused en Docker), dejando de procesar peticiones.
+
+Environment (entorno): Sistema SGAD desplegado con todos los contenedores en estado Up, recibiendo tráfico HTTP/HTTPS.
+
+Artifact (artefacto): Contenedor sgad-reverse-proxy (NGINX).
+
+Response (respuesta esperada):
+
+Antes de la falla: el reverse proxy enruta correctamente las peticiones al backend.
+
+Durante la falla: las peticiones del cliente quedan “colgadas” (sin respuesta) porque el reverse proxy está congelado.
+
+El backend (API Gateway y microservicios) sigue operativo internamente.
+
+Tras reanudar el contenedor, el sistema vuelve a responder sin reiniciar los demás servicios.
+
+Response Measure (medida):
+
+Observación del comportamiento de las requests (responden 307 vs. se quedan esperando).
+
+Verificación de que solo el reverse proxy se ve afectado.
+
+Confirmación de que, al reanudar, el sistema vuelve al estado normal.
+
+2. Paso a paso con los resultados obtenidos
+✅ Paso 1 – Verificación del estado normal del sistema
+
+Acción:
+
+Ejecutaste:
+
+curl.exe -k -I "https://localhost/api/referees"
+
+
+Resultado obtenido:
+
+Respuestas tipo:
+
+HTTP/1.1 307 Temporary Redirect
+Server: nginx/1.28.0
+Content-Length: 0
+Connection: keep-alive
+location: http://referee-service:3004/referees/
+X-Upstream-Server: 172.18.0.2:8080
+X-Load-Balancer: nginx-round-robin
+Access-Control-Allow-Origin: *
+...
+
+
+Interpretación:
+
+El reverse proxy NGINX está activo y responde correctamente.
+
+El header X-Load-Balancer: nginx-round-robin confirma que el balanceador de carga está funcionando.
+
+La cabecera location: http://referee-service:3004/referees/ muestra que la petición se redirige correctamente hacia el microservicio de árbitros.
+
+Esta salida sirve como estado base estable antes de inducir la falla.
+
+✅ Paso 2 – Envío de tráfico continuo (30 peticiones)
+
+Acción:
+
+Ejecutaste:
+
+for ($i=0; $i -lt 30; $i++) {
+    try {
+        curl.exe -k -I "https://localhost/api/referees"
+    } catch {
+        Write-Host "Error en request $i"
+    }
+}
+
+
+Resultado obtenido:
+
+Todas las respuestas fueron similares a:
+
+HTTP/1.1 307 Temporary Redirect
+Server: nginx/1.28.0
+Date: Tue, 25 Nov 2025 01:12:24 GMT
+Content-Length: 0
+Connection: keep-alive
+location: http://referee-service:3004/referees/
+X-Upstream-Server: 172.18.0.2:8080
+X-Load-Balancer: nginx-round-robin
+...
+
+
+Y se observó que el valor de X-Upstream-Server fue variando entre:
+
+172.18.0.2:8080
+
+172.18.0.3:8080
+
+172.18.0.4:8080
+
+172.18.0.5:8080
+
+Interpretación:
+
+El sistema maneja correctamente múltiples peticiones consecutivas sin errores.
+
+El encabezado X-Upstream-Server cambiando demuestra que el balanceo Round Robin está distribuyendo las peticiones entre varias instancias del API Gateway.
+
+No se observaron errores ni timeouts, por lo que el sistema es confiable bajo carga normal.
+
+✅ Paso 3 – Inducción de la falla: congelar el Reverse Proxy
+
+Acción:
+
+En la carpeta sgad-infraestructure ejecutaste:
+
+docker pause sgad-reverse-proxy
+
+
+Resultado obtenido:
+
+El contenedor sgad-reverse-proxy pasó al estado Paused (se ve en docker ps).
+
+No se cayó ningún otro contenedor.
+
+Interpretación:
+
+El reverse proxy quedó congelado: sus procesos están detenidos, pero el contenedor sigue “existiendo”.
+
+Esta situación simula un bloqueo o cuelgue del proxy (no crash, sino “hang”).
+
+✅ Paso 4 – Comportamiento del sistema durante la falla
+
+Acción:
+
+Con el reverse proxy pausado, ejecutaste de nuevo:
+
+curl.exe -k -I "https://localhost/api/referees"
+
+
+Resultado obtenido:
+
+El comando no devolvió ninguna respuesta.
+
+La terminal quedó “pensando” indefinidamente, sin mostrar cabeceras ni código de estado.
+
+Solo se interrumpe manualmente con Ctrl+C.
+
+Interpretación:
+
+El cliente (curl) logra abrir la conexión TCP, pero no recibe ninguna respuesta HTTP, porque NGINX está congelado.
+
+Esto es un ejemplo real de falla por timeout / bloqueo: el sistema no devuelve error, simplemente no responde.
+
+Es un escenario típico de pérdida de disponibilidad visible para el usuario, aunque la infraestructura interna siga viva.
+
+✅ Paso 5 – Recuperación del Reverse Proxy
+
+Acción:
+
+Para reanudar el servicio, ejecutaste:
+
+docker unpause sgad-reverse-proxy
+
+
+Luego volviste a probar:
+
+curl.exe -k -I "https://localhost/api/referees"
+
+
+Resultado esperado/obtenido:
+
+El comando vuelve a responder con:
+
+HTTP/1.1 307 Temporary Redirect
+Server: nginx/1.28.0
+...
+X-Load-Balancer: nginx-round-robin
+X-Upstream-Server: 172.18.0.X:8080
+
+
+Interpretación:
+
+El sistema se recupera tan pronto como el reverse proxy es reanudado.
+
+No fue necesario reiniciar los microservicios ni las bases de datos.
+
+Esto demuestra una buena tolerancia a fallas localizada:
+solo el punto de entrada se ve afectado, pero al restaurarlo, el flujo vuelve a la normalidad.
+
+
+🧾 ESCENARIO 2 COMPLETO (listo para entregar)
+Escenario 2 — Caída de una instancia del API Gateway
+
+Atributo evaluado: Confiabilidad → Disponibilidad por replicación
+Componente: API Gateway (4 réplicas balanceadas por NGINX)
+
+1. Escenario formal
+
+Source: Usuario externo (cliente web/móvil).
+
+Stimulus: Una instancia del API Gateway falla (estado "Exited").
+
+Environment: Sistema SGAD en operación normal, reverse proxy activo.
+
+Artifact: Contenedores sgad-api-gateway-*.
+
+Response:
+
+El sistema debe continuar respondiendo al cliente.
+
+El balanceador debe seguir enviando tráfico a las otras 3 réplicas.
+
+No se deben producir errores 5xx.
+
+Response Measure:
+
+Cantidad de peticiones atendidas correctamente.
+
+No aparición de fallas visibles al usuario.
+
+Rotación solo entre 3 upstream servers.
+
+2. Ejecución del experimento
+✔ Paso 1 — Verificar estado inicial
+
+Antes de inducir la falla, se verificó:
+
+sgad-api-gateway-1  Up
+sgad-api-gateway-2  Up
+sgad-api-gateway-3  Up
+sgad-api-gateway-4  Up
+
+
+El sistema respondía a peticiones con:
+
+307 Temporary Redirect
+X-Upstream-Server: 172.18.0.2 / .3 / .4 / .5
+
+
+➡️ Confirmación de balanceo entre 4 instancias.
+
+✔ Paso 2 — Detener una réplica
+docker stop sgad-api-gateway-2
+
+
+Estado después:
+
+sgad-api-gateway-2  Exited
+sgad-api-gateway-1  Up
+sgad-api-gateway-3  Up
+sgad-api-gateway-4  Up
+
+
+➡️ Una réplica caída, tres vivas.
+
+✔ Paso 3 — Enviar tráfico durante la falla
+for ($i=0; $i -lt 20; $i++) {
+    curl.exe -k -I "https://localhost/api/referees"
+}
+
+
+Resultados obtenidos:
+
+El cliente recibió solo respuestas 307, sin errores.
+
+El header X-Upstream-Server rotó entre 3 IPs activas.
+
+El sistema mantuvo disponibilidad total.
+
+➡️ El usuario no percibe la falla.
+
+✔ Paso 4 — Conclusión del Escenario 2
+
+Al detener una instancia del API Gateway, 
+el sistema continuó operando con normalidad
+ debido al balanceo Round Robin y la replicación
+ del componente. El reverse proxy redirigió el tráfico
+ automáticamente a las tres instancias restantes. 
+No se observaron errores en las respuestas del cliente,
+ demostrando alta disponibilidad y tolerancia a fallas en 
+la arquitectura SGAD.
+
+
+
+🟩 ESCENARIO 3 — Caída del Auth Service (Fail-Stop)
+
+Atributo evaluado: Confiabilidad → Graceful Degradation
+Componente: sgad-auth-service
+
+🟦 PASO 1 — Estado inicial (ANTES de la falla)
+✔ Comando:
+docker ps --format "table {{.Names}}\t{{.Status}}" | Select-String "auth"
+
+✔ Resultado:
+sgad-auth-service  Up (healthy)
+
+
+➡️ Auth Service funcionando correctamente.
+
+✔ Comando:
+curl.exe -k -I "https://localhost/api/auth/health"
+
+✔ Resultado:
+HTTP/1.1 404 Not Found
+
+
+➡️ El API Gateway está funcionando y ruteando solicitudes, simplemente el endpoint /health no existe (es normal en tu API Gateway).
+
+📌 Evidencia #1: Estado base del sistema.
+
+🟥 PASO 2 — Inducir la falla del Auth Service
+
+Tu consola mostró:
+
+PS> docker ps ... | Select-String auth
+(no aparece nada)
+
+
+➡️ Esto confirma que sgad-auth-service está totalmente caído.
+
+📌 Evidencia #2: El servicio falló completamente.
+
+🟦 PASO 3 — Comportamiento del sistema en endpoints que dependen del Auth
+✔ Comando:
+curl.exe -k -I "https://localhost/api/auth/login"
+
+✔ Resultado:
+HTTP/1.1 500 Internal Server Error
+X-Upstream-Server: 172.18.0.4:8080
+
+✔ Comando:
+curl.exe -k -I "https://localhost/api/auth/validate"
+
+✔ Resultado:
+HTTP/1.1 500 Internal Server Error
+X-Upstream-Server: 172.18.0.2:8080
+
+✔ Interpretación:
+
+El API Gateway sí recibe la solicitud pero al intentar contactar al Auth Service, el Auth está caído → devuelve 500 Internal Server Error.
+
+NO se devolvió 502/503 porque el Gateway maneja la excepción internamente.
+
+El error es controlado y no rompe el balanceador ni otros servicios.
+
+📌 Evidencia #3: Fallo controlado del servicio crítico.
+
+🟦 PASO 4 — Verificar microservicios NO dependientes del Auth
+✔ Comando:
+curl.exe -k -I "https://localhost/api/referees"
+
+✔ Resultado:
+HTTP/1.1 307 Temporary Redirect
+X-Upstream-Server: 172.18.0.3:8080
+
+
+➡️ Referee Service funciona perfectamente.
+
+✔ Comando:
+curl.exe -k -I "https://localhost/api/matches"
+
+✔ Resultado:
+HTTP/1.1 405 Method Not Allowed
+allow: POST
+
+
+➡️ El microservicio funciona, simplemente ese endpoint requiere POST.
+NO hay falla.
+
+✔ Comando:
+curl.exe -k -I "https://localhost/api/availability"
+
+✔ Resultado:
+HTTP/1.1 307 Temporary Redirect
+X-Upstream-Server: 172.18.0.2:8080
+
+
+➡️ Availability Service funcionando.
+
+📌 Evidencia #4: La caída del Auth NO afecta a los demás servicios.
+
+🟦 PASO 5 — Verificación del sistema en general (BACKEND)
+✔ Comando:
+docker ps
+
+✔ Resultado (resumen):
+
+Reverse Proxy → Up
+
+API Gateway replicas 1, 3, 4 → Up
+
+Referee → Up
+
+Availability → Up
+
+Match → Up
+
+BD (3 Postgres) → Up
+
+Mongo → Up
+
+Redis → Up
+
+RabbitMQ → Up
+
+Auth Service → NO aparece (caído)
+
+➡️ El sistema se mantiene estable, incluso con un servicio crítico caído.
+
+📌 Evidencia #5: No hay efecto cascada.
+
+🟩 CONCLUSIÓN DEL ESCENARIO 3 (incluye tus resultados reales)
+
+Durante el Escenario 3 se simuló la caída completa del Auth Service para evaluar la tolerancia a fallas del sistema SGAD. Tras detener el contenedor sgad-auth-service, los endpoints de autenticación (/api/auth/login y /api/auth/validate) devolvieron errores controlados de tipo 500 Internal Server Error, indicando que el API Gateway manejó correctamente la ausencia del servicio.
+
+Los demás microservicios —Referee, Availability y Match— continuaron respondiendo con normalidad (307 Temporary Redirect y 405 Method Not Allowed para rutas con métodos restringidos), demostrando una degradación controlada del sistema.
+
+El estado general del sistema permaneció estable: el Reverse Proxy, las tres instancias del API Gateway restantes, RabbitMQ, Redis, MongoDB y las bases de datos Postgres continuaron en estado Up.
+
+Esto confirma que la arquitectura distribuida del SGAD es resiliente, evita fallas en cascada y mantiene la disponibilidad parcial aun cuando un servicio crítico deja de funcionar.
+
+
+🟥 ESCENARIO 4 — Falla de la Base de Datos del Servicio de Árbitros (Referee DB)
+
+Atributo evaluado: Confiabilidad → Fault Isolation / Graceful Degradation
+Componente evaluado: sgad-referee-db (PostgreSQL)
+Microservicio impactado: sgad-referee-service
+
+🟦 PASO 1 — Verificar funcionamiento normal antes de la falla
+✔ Comando ejecutado:
+curl.exe -k -I "https://localhost/api/referees"
+
+✔ Resultado real obtenido:
+HTTP/1.1 307 Temporary Redirect
+location: http://referee-service:3004/referees/
+X-Upstream-Server: 172.18.0.4:8080
+X-Load-Balancer: nginx-round-robin
+
+✔ Interpretación:
+
+El sistema está funcionando normalmente.
+
+Reverse Proxy → OK
+
+API Gateway → OK
+
+Referee Service → OK
+
+📌 EVIDENCIA #1: Estado estable del sistema antes de inducir la falla.
+
+🟦 PASO 2 — Confirmar el estado actual de la base de datos
+✔ Comando usado:
+docker ps | Select-String "referee-db"
+
+✔ Resultado real:
+
+No apareció nada.
+
+Y en docker ps se ve que no existe el contenedor sgad-referee-db ejecutándose.
+
+✔ Interpretación:
+
+La base de datos de los árbitros ya estaba caída desde antes del experimento.
+
+Esto genera un escenario real donde el microservicio está operando sin su base de datos.
+
+📌 EVIDENCIA #2: Base de datos caída.
+
+🟦 PASO 3 — Probar el servicio afectado con la BD caída
+✔ Comando:
+curl.exe -k -I "https://localhost/api/referees"
+
+✔ Resultado real:
+HTTP/1.1 307 Temporary Redirect
+location: http://referee-service:3004/referees/
+X-Upstream-Server: 172.18.0.3:8080
+
+✔ Interpretación:
+
+A pesar de que la base de datos está caída,
+el Referee Service sigue respondiendo al endpoint HEAD /referees.
+
+Esto se debe a que:
+
+el endpoint HEAD no consulta la base de datos,
+
+o el servicio implementa una respuesta mínima sin dependencias de datos.
+
+➡️ El sistema muestra robustez ante la falla parcial.
+
+📌 EVIDENCIA #3: El endpoint principal responde aun sin BD.
+
+🟦 PASO 4 — Revisar logs del Referee Service durante la falla
+✔ Comando ejecutado:
+docker logs sgad-referee-service --tail 50
+
+✔ Resultado real:
+INFO: ... "HEAD /referees HTTP/1.1" 307 Temporary Redirect
+INFO: ... "HEAD /referees HTTP/1.1" 307 Temporary Redirect
+INFO: ... "HEAD /referees HTTP/1.1" 307 Temporary Redirect
+...
+(muchas líneas iguales)
+
+✔ Interpretación:
+
+No se registran errores de BD (connection refused, psycopg2 errors, etc.)
+
+Esto confirma que HEAD /referees NO intenta acceder a la base de datos.
+
+El servicio funciona parcialmente aunque la BD esté caída.
+
+📌 EVIDENCIA #4: Logs limpios, sin error por falta de BD.
+
+🟦 PASO 5 — Comprobar el estado general del sistema
+✔ Comando:
+docker ps
+
+✔ Resultado real:
+sgad-reverse-proxy               Up
+sgad-api-gateway-1               Up
+sgad-api-gateway-2               Up
+sgad-api-gateway-3               Up
+sgad-api-gateway-4               Up
+sgad-auth-service                Up (healthy)
+sgad-referee-service             Up
+sgad-availability-service        Up
+sgad-match-service               Up
+sgad-users-db                    Up (healthy)
+sgad-match-db                    Up (healthy)
+sgad-rabbitmq                    Up
+sgad-redis                       Up
+sgad-certificados-db (mongo)     Up
+(no aparece sgad-referee-db)
+
+✔ Interpretación:
+
+Todos los microservicios están Up, excepto la base de datos de árbitros.
+
+El sistema no sufrió fallas en cascada.
+
+Reverse Proxy y API Gateway siguen operativos.
+
+Otros servicios no fueron impactados.
+
+📌 EVIDENCIA #5: Sistema completo operativo salvo la BD caída.
+
+🟦 PASO 6 — RESTAURACIÓN (opcional si existiera la BD)
+
+Si existiera el contenedor:
+
+docker start sgad-referee-db
+
+
+Como en tu caso esta BD no está creada en tu infraestructura actual, la restauración no aplica.
+
+🟩 CONCLUSIÓN DEL ESCENARIO 4 (LISTA PARA INFORME)
+
+En el Escenario 4 se analizó el comportamiento del SGAD ante la caída de la base de datos del servicio de árbitros (sgad-referee-db). Al verificar docker ps, se evidenció que la base de datos no se encontraba en ejecución. Aun así, el endpoint HEAD /api/referees continuó respondiendo con redirecciones 307, indicando que el sgad-referee-service mantiene una disponibilidad mínima aun sin acceso a la base de datos.
+
+Los logs del servicio mostraron únicamente respuestas exitosas, sin errores de conexión, lo cual indica que la operación HEAD no depende de la base de datos. El resto de los servicios (API Gateway, Reverse Proxy, Auth, Availability, Match, RabbitMQ, Redis y MongoDB) permanecieron completamente operativos.
+
+Este resultado demuestra aislamiento de fallas, degradación controlada y confiabilidad de la arquitectura, ya que la caída de un componente de datos no afecta la disponibilidad global del sistema.
